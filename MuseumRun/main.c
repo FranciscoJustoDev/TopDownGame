@@ -70,15 +70,7 @@ void init();
 void update();
 void display();
 
-/*  Player */
-void playerDraw();
-
-/*  Level */
-void mapDraw();
 void tileDraw(int x, int y, int tile);
-
-/*  Items */
-void itemsDraw();
 
 int main(void) {
 
