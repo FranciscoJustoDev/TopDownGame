@@ -71,19 +71,13 @@ void update();
 void display();
 
 /*  Player */
-void playerInit();
-void playerUpdate();
 void playerDraw();
 
 /*  Level */
-void levelInit();
-void tileImgSetup();
-void mapSetup();
 void mapDraw();
 void tileDraw(int x, int y, int tile);
 
 /*  Items */
-void itemsSetup();
 void itemsDraw();
 
 int main(void) {
@@ -140,68 +134,15 @@ void init() {
     SDL_CreateWindowAndRenderer(SCREEN_W, SCREEN_H, 0, &win, &rend);
     SDL_SetWindowTitle(win, "2DGame");
 
-    levelInit();
-    playerInit();
-    mapSetup();
-    itemsSetup();
-}
-
-void update() {
-    playerUpdate();
-}
-
-void display() {
-    SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-    SDL_RenderClear(rend);
-
-    mapDraw();
-    itemsDraw();
-    playerDraw();
-
-    SDL_RenderPresent(rend);
-}
-
-void playerInit() {
-    p.rect.x = 0; p.rect.y = 0;
-    p.size = CELL_SIZE;
-    p.rect.w = p.size; p.rect.h = p.size;
-    p.stepSize = CELL_SIZE;
-}
-
-void playerUpdate() {
-    if (p.rect.y > SCREEN_H - p.size) {p.rect.y = SCREEN_H - CELL_SIZE;}
-    if (p.rect.y < 0) { p.rect.y = 0;}
-    if (p.rect.x > SCREEN_W - p.size) { p.rect.x = SCREEN_W - CELL_SIZE;}
-    if (p.rect.x < 0) { p.rect.x = 0;}
-
-    for (int i = 0; i < items.size; i++) {
-        if (p.rect.x == items.item[i].x && p.rect.y == items.item[i].y) {
-            items.item[i].x = -CELL_SIZE; items.item[i].y = -CELL_SIZE;
-        }
-    }
-}
-
-void playerDraw() {
-    SDL_SetRenderDrawColor(rend, 200, 125, 0, 255);
-    SDL_RenderFillRect(rend, &p.rect);
-}
-
-void levelInit() {
+    // Level
     level.tile.grass = 0;
     level.tile.road = 1;
     level.tile.water = 2;
     level.tile.playerPos = 3;
     level.tile.endPos = 4;
     level.mapSize.x = 16; level.mapSize.y = 8;
-    tileImgSetup();
-    /*  load map from file
-        get mapX, mapY, mapLength
-        set spawnX, spawnY
-        calculate cells real pos,
-        edge limits and center pos */
-}
-
-void tileImgSetup() {
+    
+    // Tile Images
     int grassImg[] = {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -285,10 +226,21 @@ void tileImgSetup() {
             cell++;
         }
     }
-}
 
-void mapSetup() {
-    int cell = 0;
+    /*  load map from file
+        get mapX, mapY, mapLength
+        set spawnX, spawnY
+        calculate cells real pos,
+        edge limits and center pos */
+
+    // Player
+    p.rect.x = 0; p.rect.y = 0;
+    p.size = CELL_SIZE;
+    p.rect.w = p.size; p.rect.h = p.size;
+    p.stepSize = CELL_SIZE;
+
+    // Map
+    cell = 0;
     for (int i = 0; i < level.mapSize.y; i++) {
         for (int j = 0; j < level.mapSize.x; j++) {
             if (map[cell] == level.tile.playerPos) {
@@ -299,9 +251,8 @@ void mapSetup() {
         }
     }
     p.rect.x = level.spawnX; p.rect.y = level.spawnY;
-}
 
-void itemsSetup() {
+    // Items
     int itemImg[] = {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -326,7 +277,7 @@ void itemsSetup() {
         items.item[i].x = i * CELL_SIZE * 2 + (CELL_SIZE * 5); items.item[i].y = 4 * CELL_SIZE;
     }
 
-    int cell = 0;
+    cell = 0;
     for (int i = 0; i < 16; i++) {
         for (int j = 0; j < 16; j++) {
             items.itemImg[cell] = itemImg[cell];
@@ -335,27 +286,26 @@ void itemsSetup() {
     }
 }
 
-void itemsDraw() {
-    SDL_Rect rect = { 0, 0, 4, 4 };
-    int cell = 0;
-    SDL_SetRenderDrawColor(rend, 0, 50, 255, 255);
-    for (int x = 0; x < items.size; x++) {
-        for (int i = 0; i < 16; i++) {
-            for (int j = 0; j < 16; j++) {
-                if (items.itemImg[cell] == 1) {
-                    rect.x = j * 4 + items.item[x].x; rect.y = i * 4 + items.item[x].y;
-                    SDL_RenderFillRect(rend, &rect);
-                }
-                cell++;
-            }
-        }
-        cell = 0;
+void update() {
+    // Player
+    if (p.rect.y > SCREEN_H - p.size) { p.rect.y = SCREEN_H - CELL_SIZE; }
+    if (p.rect.y < 0) { p.rect.y = 0; }
+    if (p.rect.x > SCREEN_W - p.size) { p.rect.x = SCREEN_W - CELL_SIZE; }
+    if (p.rect.x < 0) { p.rect.x = 0; }
 
+    // Pick up Items
+    for (int i = 0; i < items.size; i++) {
+        if (p.rect.x == items.item[i].x && p.rect.y == items.item[i].y) {
+            items.item[i].x = -CELL_SIZE; items.item[i].y = -CELL_SIZE;
+        }
     }
 }
 
-void mapDraw() {
-    SDL_Rect rect = { 0, 0, CELL_SIZE, CELL_SIZE };
+void display() {
+    SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+    SDL_RenderClear(rend);
+
+    // Map
     int cell = 0;
     for (int i = 0; i < level.mapSize.y; i++) {
         for (int j = 0; j < level.mapSize.x; j++) {
@@ -374,6 +324,29 @@ void mapDraw() {
             cell++;
         }
     }
+    
+    // Items
+    SDL_Rect rect = { 0, 0, 4, 4 };
+    cell = 0;
+    SDL_SetRenderDrawColor(rend, 0, 50, 255, 255);
+    for (int x = 0; x < items.size; x++) {
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 16; j++) {
+                if (items.itemImg[cell] == 1) {
+                    rect.x = j * 4 + items.item[x].x; rect.y = i * 4 + items.item[x].y;
+                    SDL_RenderFillRect(rend, &rect);
+                }
+                cell++;
+            }
+        }
+        cell = 0;
+    }
+
+    // Player
+    SDL_SetRenderDrawColor(rend, 200, 125, 0, 255);
+    SDL_RenderFillRect(rend, &p.rect);
+
+    SDL_RenderPresent(rend);
 }
 
 void tileDraw(int x, int y, int tile) {
