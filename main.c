@@ -9,9 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SCREEN_W 1024
-#define SCREEN_H 512
-#define CELL_SIZE 64
+#define CELL_SIZE 32
+#define WIDTH CELL_SIZE * 16
+#define HEIGHT CELL_SIZE * 8
+#define TILE_STEP CELL_SIZE / 16
 
 int not_quit = 1;
 
@@ -97,7 +98,7 @@ int main(void) {
 
 void init() {
     SDL_Init(SDL_INIT_EVERYTHING);
-    SDL_CreateWindowAndRenderer(SCREEN_W, SCREEN_H, 0, &win, &rend);
+    SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &win, &rend);
     SDL_SetWindowTitle(win, "2DGame");
 
     // Level
@@ -237,6 +238,8 @@ void init() {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
+
+    //  Setting position manually
     items.size = 4;
     for (int i = 0; i < items.size; i++) {
         items.item[i].w = CELL_SIZE; items.item[i].h = CELL_SIZE;
@@ -288,9 +291,9 @@ void events(){
 
 void update() {
     // Player
-    if (p.rect.y > SCREEN_H - p.size) { p.rect.y = SCREEN_H - CELL_SIZE; }
+    if (p.rect.y > HEIGHT - p.size) { p.rect.y = HEIGHT - CELL_SIZE; }
     if (p.rect.y < 0) { p.rect.y = 0; }
-    if (p.rect.x > SCREEN_W - p.size) { p.rect.x = SCREEN_W - CELL_SIZE; }
+    if (p.rect.x > WIDTH - p.size) { p.rect.x = WIDTH - CELL_SIZE; }
     if (p.rect.x < 0) { p.rect.x = 0; }
 
     // Pick up Items
@@ -315,14 +318,14 @@ void display() {
     }
     
     // Items
-    SDL_Rect rect = { 0, 0, 4, 4 };
+    SDL_Rect rect = { 0, 0, TILE_STEP, TILE_STEP};
     cell = 0;
     SDL_SetRenderDrawColor(rend, 0, 50, 255, 255);
     for (int x = 0; x < items.size; x++) {
         for (int i = 0; i < 16; i++) {
             for (int j = 0; j < 16; j++) {
                 if (items.itemImg[cell] == 1) {
-                    rect.x = j * 4 + items.item[x].x; rect.y = i * 4 + items.item[x].y;
+                    rect.x = j * TILE_STEP + items.item[x].x; rect.y = i * TILE_STEP + items.item[x].y;
                     SDL_RenderFillRect(rend, &rect);
                 }
                 cell++;
@@ -339,7 +342,7 @@ void display() {
 }
 
 void tileDraw(int x, int y, int tile) {
-    SDL_Rect rect = { 0, 0, 4, 4 };
+    SDL_Rect rect = { 0, 0, TILE_STEP, TILE_STEP};
     int *img;
     int cell = 0;
 
@@ -390,7 +393,7 @@ void tileDraw(int x, int y, int tile) {
                     SDL_SetRenderDrawColor(rend, 0, 0, 0, 0);
                     break;
             }
-            rect.x = j * 4 + x; rect.y = i * 4 + y;
+            rect.x = j * TILE_STEP + x; rect.y = i * TILE_STEP + y;
             SDL_RenderFillRect(rend, &rect);
             cell++;
         }
