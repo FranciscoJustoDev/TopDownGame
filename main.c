@@ -7,6 +7,7 @@
 
 #include <SDL2/SDL.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define SCREEN_W 1024
 #define SCREEN_H 512
@@ -108,7 +109,7 @@ void init() {
     level.mapSize.x = 16; level.mapSize.y = 8;
     
     // Tile Images
-    int grassImg[] = {
+    int grassImg[] = {//    0 green/ 1 dark green
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0,
@@ -126,59 +127,59 @@ void init() {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
-    int roadImg[] = {
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    int roadImg[] = {// 2 black/ 3 yellow
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
     };
-    int waterImg[] = {
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 0, 1, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0,
-                0, 0, 1, 0, 2, 0, 0, 1, 0, 1, 0, 0, 0, 2, 0, 0,
-                0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 1, 0, 0, 0, 0, 0,
-                0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 1,
-                0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0,
-                0, 0, 0, 1, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 1,
-                0, 0, 2, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 2, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 1, 0, 1, 0, 2, 0,
-                0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    int waterImg[] = {//    4 blue/ 0 green/ 5 red
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                4, 0, 4, 0, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4,
+                4, 4, 0, 4, 5, 4, 4, 0, 4, 0, 4, 4, 4, 5, 4, 4,
+                4, 4, 4, 4, 4, 4, 5, 4, 0, 4, 0, 4, 4, 4, 4, 4,
+                4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 4, 4, 0, 4, 0,
+                4, 4, 0, 4, 0, 4, 4, 4, 4, 4, 4, 5, 4, 4, 0, 4,
+                4, 4, 4, 0, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 4, 4, 5, 0,
+                4, 4, 5, 4, 4, 0, 5, 0, 4, 4, 4, 4, 4, 0, 4, 4,
+                4, 4, 4, 4, 4, 4, 0, 4, 4, 5, 4, 4, 4, 5, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                4, 4, 4, 5, 4, 5, 4, 4, 4, 4, 0, 4, 0, 4, 5, 4,
+                4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4, 0, 4, 0, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
     };
-    int playerPosImg[] = {
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1,
-                0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0,
-                0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0,
-                0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0,
-                0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0,
-                0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0,
-                0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0,
-                0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0,
-                0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    int playerPosImg[] = {//    6 grey/ 2 black
+                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                6, 2, 2, 6, 2, 2, 2, 6, 6, 6, 6, 6, 6, 2, 2, 2,
+                6, 2, 6, 6, 6, 2, 6, 6, 2, 6, 6, 2, 2, 6, 2, 6,
+                6, 2, 2, 6, 6, 2, 6, 2, 6, 2, 6, 2, 6, 6, 2, 6,
+                6, 6, 2, 6, 6, 2, 6, 2, 2, 2, 6, 2, 6, 6, 2, 6,
+                6, 2, 2, 6, 6, 2, 6, 2, 6, 2, 6, 2, 6, 6, 2, 6,
+                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                6, 2, 2, 6, 6, 6, 2, 6, 6, 2, 2, 6, 6, 6, 6, 6,
+                6, 2, 6, 2, 6, 2, 6, 2, 6, 2, 6, 6, 6, 6, 6, 6,
+                6, 2, 2, 6, 6, 2, 6, 2, 6, 2, 2, 6, 6, 6, 6, 6,
+                6, 2, 6, 6, 6, 2, 6, 2, 6, 6, 2, 6, 6, 6, 6, 6,
+                6, 2, 6, 6, 6, 6, 2, 6, 6, 2, 2, 6, 6, 6, 6, 6,
+                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
     };
 
     int cell = 0;
@@ -308,18 +309,7 @@ void display() {
     int cell = 0;
     for (int i = 0; i < level.mapSize.y; i++) {
         for (int j = 0; j < level.mapSize.x; j++) {
-            if (map[cell] == level.tile.grass) {
-                tileDraw(j * CELL_SIZE, i * CELL_SIZE, level.tile.grass);
-            }
-            else if (map[cell] == level.tile.road) {
-                tileDraw(j * CELL_SIZE, i * CELL_SIZE, level.tile.road);
-            }
-            else if (map[cell] == level.tile.water) {
-                tileDraw(j * CELL_SIZE, i * CELL_SIZE, level.tile.water);
-            }
-            else if (map[cell] == level.tile.playerPos) {
-                tileDraw(j * CELL_SIZE, i * CELL_SIZE, level.tile.playerPos);
-            }
+            tileDraw(j * CELL_SIZE, i * CELL_SIZE, map[cell]);
             cell++;
         }
     }
@@ -350,72 +340,59 @@ void display() {
 
 void tileDraw(int x, int y, int tile) {
     SDL_Rect rect = { 0, 0, 4, 4 };
+    int *img;
     int cell = 0;
+
     switch (tile){
         case 0:
-            for (int i = 0; i < 16; i++) {
-                for (int j = 0; j < 16; j++) {
-                    if (level.tile.grassImg[cell] == 0) {
-                        SDL_SetRenderDrawColor(rend, 0, 255, 0, 255);
-                    }
-                    if (level.tile.grassImg[cell] == 1) {
-                        SDL_SetRenderDrawColor(rend, 0, 150, 0, 255);
-                    }
-                    rect.x = j * 4 + x; rect.y = i * 4 + y;
-                    SDL_RenderFillRect(rend, &rect);
-                    cell++;
-                }
-            }
+            img = level.tile.grassImg;
             break;
         case 1:
-            for (int i = 0; i < 16; i++) {
-                for (int j = 0; j < 16; j++) {
-                    if (level.tile.roadImg[cell] == 0) {
-                        SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-                    }
-                    if (level.tile.roadImg[cell] == 1) {
-                        SDL_SetRenderDrawColor(rend, 255, 255, 0, 255);
-                    }
-                    rect.x = j * 4 + x; rect.y = i * 4 + y;
-                    SDL_RenderFillRect(rend, &rect);
-                    cell++;
-                }
-            }
+            img = level.tile.roadImg;
             break;
         case 2:
-            for (int i = 0; i < 16; i++) {
-                for (int j = 0; j < 16; j++) {
-                    if (level.tile.waterImg[cell] == 0) {
-                        SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);
-                    }
-                    if (level.tile.waterImg[cell] == 1) {
-                        SDL_SetRenderDrawColor(rend, 0, 255, 0, 255);
-                    }
-                    if (level.tile.waterImg[cell] == 2) {
-                        SDL_SetRenderDrawColor(rend, 255, 0, 0, 255);
-                    }
-                    rect.x = j * 4 + x; rect.y = i * 4 + y;
-                    SDL_RenderFillRect(rend, &rect);
-                    cell++;
-                }
-            }
+            img = level.tile.waterImg;
             break;
         case 3:
-            for (int i = 0; i < 16; i++) {
-                for (int j = 0; j < 16; j++) {
-                    if (level.tile.playerPosImg[cell] == 0) {
-                        SDL_SetRenderDrawColor(rend, 50, 50, 50, 255);
-                    }
-                    if (level.tile.playerPosImg[cell] == 1) {
-                        SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-                    }
-                    rect.x = j * 4 + x; rect.y = i * 4 + y;
-                    SDL_RenderFillRect(rend, &rect);
-                    cell++;
-                }
-            }
+            img = level.tile.playerPosImg;
             break;
         default:
             break;
+    }
+
+    //  Assign color and draw
+
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < 16; j++) {
+            switch (img[cell]) {
+                case 0://   green
+                    SDL_SetRenderDrawColor(rend, 0, 255, 0, 255);
+                    break;
+                case 1://   dark green
+                    SDL_SetRenderDrawColor(rend, 0, 150, 0, 255);
+                    break;
+                case 2://   black
+                    SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+                    break;
+                case 3://   yellow
+                    SDL_SetRenderDrawColor(rend, 255, 255, 0, 255);
+                    break;
+                case 4://   blue
+                    SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);
+                    break;
+                case 5://   red
+                    SDL_SetRenderDrawColor(rend, 255, 0, 0, 255);
+                    break;
+                case 6://   grey
+                    SDL_SetRenderDrawColor(rend, 50, 50, 50, 255);
+                    break;
+                default://  transparent
+                    SDL_SetRenderDrawColor(rend, 0, 0, 0, 0);
+                    break;
+            }
+            rect.x = j * 4 + x; rect.y = i * 4 + y;
+            SDL_RenderFillRect(rend, &rect);
+            cell++;
+        }
     }
 }
