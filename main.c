@@ -5,12 +5,14 @@
         Collision detection between player and road.
         Get map size dinamically. */
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <stdio.h>
 
 #define SCREEN_W 1024
 #define SCREEN_H 512
 #define CELL_SIZE 64
+
+int not_quit = 1;
 
 SDL_Window* win = NULL;
 SDL_Renderer* rend = NULL;
@@ -65,8 +67,11 @@ int map[] = {
     0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 2, 2, 0, 0, 0
 };
 
-/*  Main Loop */
+/*  Level Startup */
 void init();
+
+/*  Main Loop */
+void events();
 void update();
 void display();
 
@@ -76,41 +81,9 @@ int main(void) {
 
     init();
 
-    int run = 1;
-    while (run)
+    while (not_quit)
     {
-        SDL_Event ev;
-        while (SDL_PollEvent(&ev)) {
-            switch (ev.type) {
-            case SDL_QUIT:
-                run = 0;
-                break;
-            case SDL_KEYDOWN:
-                switch (ev.key.keysym.scancode) {
-                case SDL_SCANCODE_ESCAPE:
-                    run = 0;
-                    break;
-                case SDL_SCANCODE_W:
-                    p.rect.y -= p.stepSize;
-                    break;
-                case SDL_SCANCODE_S:
-                    p.rect.y += p.stepSize;
-                    break;
-                case SDL_SCANCODE_A:
-                    p.rect.x -= p.stepSize;
-                    break;
-                case SDL_SCANCODE_D:
-                    p.rect.x += p.stepSize;
-                    break;
-                default:
-                    break;
-                }
-                break;
-            default:
-                break;
-            }
-        }
-
+        events();
         update();
         display();
     }
@@ -274,6 +247,40 @@ void init() {
         for (int j = 0; j < 16; j++) {
             items.itemImg[cell] = itemImg[cell];
             cell++;
+        }
+    }
+}
+
+void events(){
+    SDL_Event ev;
+    while (SDL_PollEvent(&ev)) {
+        switch (ev.type) {
+        case SDL_QUIT:
+            not_quit = 0;
+            break;
+        case SDL_KEYDOWN:
+            switch (ev.key.keysym.scancode) {
+            case SDL_SCANCODE_ESCAPE:
+                not_quit = 0;
+                break;
+            case SDL_SCANCODE_W:
+                p.rect.y -= p.stepSize;
+                break;
+            case SDL_SCANCODE_S:
+                p.rect.y += p.stepSize;
+                break;
+            case SDL_SCANCODE_A:
+                p.rect.x -= p.stepSize;
+                break;
+            case SDL_SCANCODE_D:
+                p.rect.x += p.stepSize;
+                break;
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
         }
     }
 }
