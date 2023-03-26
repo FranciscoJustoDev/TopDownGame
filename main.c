@@ -11,8 +11,14 @@
 
 #define CELL_SIZE 32
 #define WIDTH CELL_SIZE * 16
-#define HEIGHT CELL_SIZE * 8
+#define HEIGHT CELL_SIZE * 9
 #define TILE_STEP CELL_SIZE / 16
+#define TILE_SIZE 256
+
+#define GRASS 0
+#define ROAD 1
+#define WATER 2
+#define START_POS 3
 
 int not_quit = 1;
 
@@ -25,25 +31,15 @@ typedef struct {
 }Pos;
 
 typedef struct {
-    int grass;
-    int grassImg[256];
-    int road;
-    int roadImg[256];
-    int water;
-    int waterImg[256];
-    int playerPos;
-    int playerPosImg[256];
-    int endPos;
-    int endPosImg[256];
-}Tile;
+    int size;
+    int **tiles;
+}TileMap;
 
 typedef struct {
     Pos mapSize;
-    int mapLength;
-    int spawnX;
-    int spawnY;
+    Pos spawn;
     int* map;
-    Tile tile;
+    TileMap tileMap;
 }Level; Level level;
 
 typedef struct {
@@ -57,17 +53,6 @@ typedef struct {
     int size;
     int itemImg[256];
 }Item; Item items;
-
-int map[] = {
-    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,
-    0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 2, 2, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 2, 2, 0, 0, 0
-};
 
 /*  Level Startup */
 void init();
@@ -102,14 +87,14 @@ void init() {
     SDL_SetWindowTitle(win, "2DGame");
 
     // Level
-    level.tile.grass = 0;
-    level.tile.road = 1;
-    level.tile.water = 2;
-    level.tile.playerPos = 3;
-    level.tile.endPos = 4;
-    level.mapSize.x = 16; level.mapSize.y = 8;
-    
-    // Tile Images
+
+    // TileMap
+    level.tileMap.size = 4;
+    level.tileMap.tiles = malloc(sizeof(int *) * level.tileMap.size);
+    for(int t = 0; t < level.tileMap.size; t++){
+        level.tileMap.tiles[t] = malloc(sizeof(int) * TILE_SIZE);
+    }
+
     int grassImg[] = {//    0 green/ 1 dark green
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -186,10 +171,10 @@ void init() {
     int cell = 0;
     for (int i = 0; i < 16; i++) {
         for (int j = 0; j < 16; j++) {
-            level.tile.grassImg[cell] = grassImg[cell];
-            level.tile.roadImg[cell] = roadImg[cell];
-            level.tile.waterImg[cell] = waterImg[cell];
-            level.tile.playerPosImg[cell] = playerPosImg[cell];
+            level.tileMap.tiles[0][cell] = grassImg[cell];
+            level.tileMap.tiles[1][cell] = roadImg[cell];
+            level.tileMap.tiles[2][cell] = waterImg[cell];
+            level.tileMap.tiles[3][cell] = playerPosImg[cell];
             cell++;
         }
     }
@@ -207,17 +192,32 @@ void init() {
     p.stepSize = CELL_SIZE;
 
     // Map
+    int map[] = {
+    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,
+    0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 2, 2, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 2, 2, 0, 0, 0
+    };
+
+    level.mapSize.x = 16; level.mapSize.y = 8;
+    level.map = malloc(sizeof(int) * (level.mapSize.x * level.mapSize.y));
+
     cell = 0;
     for (int i = 0; i < level.mapSize.y; i++) {
         for (int j = 0; j < level.mapSize.x; j++) {
-            if (map[cell] == level.tile.playerPos) {
-                level.spawnX = j * CELL_SIZE;
-                level.spawnY = i * CELL_SIZE;
+            level.map[cell] = map[cell];
+            if (level.map[cell] == START_POS) {
+                level.spawn.x = j * CELL_SIZE;
+                level.spawn.y = i * CELL_SIZE;
             }
             cell++;
         }
     }
-    p.rect.x = level.spawnX; p.rect.y = level.spawnY;
+    p.rect.x = level.spawn.x; p.rect.y = level.spawn.y;
 
     // Items
     int itemImg[] = {
@@ -305,14 +305,14 @@ void update() {
 }
 
 void display() {
-    SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(rend, 110, 110, 255, 255);
     SDL_RenderClear(rend);
 
     // Map
     int cell = 0;
     for (int i = 0; i < level.mapSize.y; i++) {
         for (int j = 0; j < level.mapSize.x; j++) {
-            tileDraw(j * CELL_SIZE, i * CELL_SIZE, map[cell]);
+            tileDraw(j * CELL_SIZE, i * CELL_SIZE, level.map[cell]);
             cell++;
         }
     }
@@ -343,31 +343,13 @@ void display() {
 
 void tileDraw(int x, int y, int tile) {
     SDL_Rect rect = { 0, 0, TILE_STEP, TILE_STEP};
-    int *img;
     int cell = 0;
-
-    switch (tile){
-        case 0:
-            img = level.tile.grassImg;
-            break;
-        case 1:
-            img = level.tile.roadImg;
-            break;
-        case 2:
-            img = level.tile.waterImg;
-            break;
-        case 3:
-            img = level.tile.playerPosImg;
-            break;
-        default:
-            break;
-    }
 
     //  Assign color and draw
 
     for (int i = 0; i < 16; i++) {
         for (int j = 0; j < 16; j++) {
-            switch (img[cell]) {
+            switch (level.tileMap.tiles[tile][cell]) {
                 case 0://   green
                     SDL_SetRenderDrawColor(rend, 0, 255, 0, 255);
                     break;
