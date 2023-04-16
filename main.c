@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CELL_SIZE 32
+#define CELL_SIZE 64
 #define WIDTH CELL_SIZE * 16
 #define HEIGHT CELL_SIZE * 9
 #define TILE_STEP CELL_SIZE / 16
@@ -18,7 +18,8 @@
 #define GRASS 0
 #define ROAD 1
 #define WATER 2
-#define START_POS 3
+
+#define PLAYER 1
 
 int not_quit = 1;
 
@@ -36,23 +37,39 @@ typedef struct {
 }TileMap;
 
 typedef struct {
-    Pos mapSize;
-    Pos spawn;
-    int* map;
+    Pos size;           // Same W,H for all maps
+    int *layout;        // draw order: 1st
+    int *objects;       // 2nd
+    int *items;         // 3rd
+    int *creatures;     // 4th
+    int *events;        // 5th
+}Map;
+
+typedef struct {
+    int type;
+    Pos pos;
+}Item;
+
+typedef struct {
+    int itemCount;
+    int tileCount;
+    Item *items;
+    int **tiles;
+}ItemList;
+
+typedef struct {
+    Map map;
+    Pos playerSpawn;
     TileMap tileMap;
+    ItemList itemList;
 }Level; Level level;
 
 typedef struct {
-    SDL_Rect rect;
+    Pos pos;            // grid position
+    SDL_Rect rect;      // pixel position
     int size;
     int stepSize;
 }Player; Player p;
-
-typedef struct {
-    SDL_Rect item[4];
-    int size;
-    int itemImg[256];
-}Item; Item items;
 
 /*  Level Startup */
 void init();
@@ -87,14 +104,6 @@ void init() {
     SDL_SetWindowTitle(win, "2DGame");
 
     // Level
-
-    // TileMap
-    level.tileMap.size = 4;
-    level.tileMap.tiles = malloc(sizeof(int *) * level.tileMap.size);
-    for(int t = 0; t < level.tileMap.size; t++){
-        level.tileMap.tiles[t] = malloc(sizeof(int) * TILE_SIZE);
-    }
-
     int grassImg[] = {//    0 green/ 1 dark green
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -149,24 +158,13 @@ void init() {
                 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
                 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
     };
-    int playerPosImg[] = {//    6 grey/ 2 black
-                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-                6, 2, 2, 6, 2, 2, 2, 6, 6, 6, 6, 6, 6, 2, 2, 2,
-                6, 2, 6, 6, 6, 2, 6, 6, 2, 6, 6, 2, 2, 6, 2, 6,
-                6, 2, 2, 6, 6, 2, 6, 2, 6, 2, 6, 2, 6, 6, 2, 6,
-                6, 6, 2, 6, 6, 2, 6, 2, 2, 2, 6, 2, 6, 6, 2, 6,
-                6, 2, 2, 6, 6, 2, 6, 2, 6, 2, 6, 2, 6, 6, 2, 6,
-                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-                6, 2, 2, 6, 6, 6, 2, 6, 6, 2, 2, 6, 6, 6, 6, 6,
-                6, 2, 6, 2, 6, 2, 6, 2, 6, 2, 6, 6, 6, 6, 6, 6,
-                6, 2, 2, 6, 6, 2, 6, 2, 6, 2, 2, 6, 6, 6, 6, 6,
-                6, 2, 6, 6, 6, 2, 6, 2, 6, 6, 2, 6, 6, 6, 6, 6,
-                6, 2, 6, 6, 6, 6, 2, 6, 6, 2, 2, 6, 6, 6, 6, 6,
-                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
-    };
+
+    // TileMap
+    level.tileMap.size = 3;
+    level.tileMap.tiles = malloc(sizeof(int *) * level.tileMap.size);
+    for(int t = 0; t < level.tileMap.size; t++){
+        level.tileMap.tiles[t] = malloc(sizeof(int) * TILE_SIZE);
+    }
 
     int cell = 0;
     for (int i = 0; i < 16; i++) {
@@ -174,7 +172,6 @@ void init() {
             level.tileMap.tiles[0][cell] = grassImg[cell];
             level.tileMap.tiles[1][cell] = roadImg[cell];
             level.tileMap.tiles[2][cell] = waterImg[cell];
-            level.tileMap.tiles[3][cell] = playerPosImg[cell];
             cell++;
         }
     }
@@ -185,17 +182,11 @@ void init() {
         calculate cells real pos,
         edge limits and center pos */
 
-    // Player
-    p.rect.x = 0; p.rect.y = 0;
-    p.size = CELL_SIZE;
-    p.rect.w = p.size; p.rect.h = p.size;
-    p.stepSize = CELL_SIZE;
-
-    // Map
-    int map[] = {
+    // Maps
+    int layoutMap[] = {
     0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
     0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0,
-    0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
     0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0,
@@ -203,54 +194,149 @@ void init() {
     0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 2, 2, 0, 0, 0
     };
 
-    level.mapSize.x = 16; level.mapSize.y = 8;
-    level.map = malloc(sizeof(int) * (level.mapSize.x * level.mapSize.y));
+    int objectMap[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
+
+    int itemMap[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
+
+    int creatureMap[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
+
+    int eventMap[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
+
+    level.map.size.x = 16; level.map.size.y = 8;
+    level.map.layout = malloc(sizeof(int) * (level.map.size.x * level.map.size.y));
+    level.map.objects = malloc(sizeof(int) * (level.map.size.x * level.map.size.y));
+    level.map.items = malloc(sizeof(int) * (level.map.size.x * level.map.size.y));
+    level.map.creatures = malloc(sizeof(int) * (level.map.size.x * level.map.size.y));
+    level.map.events = malloc(sizeof(int) * (level.map.size.x * level.map.size.y));
 
     cell = 0;
-    for (int i = 0; i < level.mapSize.y; i++) {
-        for (int j = 0; j < level.mapSize.x; j++) {
-            level.map[cell] = map[cell];
-            if (level.map[cell] == START_POS) {
-                level.spawn.x = j * CELL_SIZE;
-                level.spawn.y = i * CELL_SIZE;
+    for (int i = 0; i < level.map.size.y; i++) {
+        for (int j = 0; j < level.map.size.x; j++) {
+            level.map.layout[cell] = layoutMap[cell];
+            level.map.objects[cell] = objectMap[cell];
+            level.map.items[cell] = itemMap[cell];
+            level.map.creatures[cell] = creatureMap[cell];
+            level.map.events[cell] = eventMap[cell];
+
+            if (level.map.events[cell] == PLAYER) {
+                level.playerSpawn.x = j;
+                level.playerSpawn.y = i;
             }
             cell++;
         }
     }
-    p.rect.x = level.spawn.x; p.rect.y = level.spawn.y;
+
+    // Player
+    p.pos.x = level.playerSpawn.x; p.pos.y = level.playerSpawn.y;
+    p.rect.x = p.pos.x * CELL_SIZE; p.rect.y = p.pos.y * CELL_SIZE;
+    p.size = CELL_SIZE;
+    p.rect.w = p.size; p.rect.h = p.size;
+    p.stepSize = CELL_SIZE;
 
     // Items
-    int itemImg[] = {
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    int itemImg[] = {//     7 transparent / 4 blue
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 4, 4, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 4, 4, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 4, 4, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 4, 4, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 4, 4, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 4, 4, 4, 4, 4, 4, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 4, 4, 4, 4, 4, 4, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 4, 4, 4, 4, 4, 4, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 4, 4, 4, 4, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
     };
 
-    //  Setting position manually
-    items.size = 4;
-    for (int i = 0; i < items.size; i++) {
-        items.item[i].w = CELL_SIZE; items.item[i].h = CELL_SIZE;
-        items.item[i].x = i * CELL_SIZE * 2 + (CELL_SIZE * 5); items.item[i].y = 4 * CELL_SIZE;
+    // Load item sprites
+    level.itemList.tileCount = 1;
+    level.itemList.tiles = malloc(sizeof(int *) * level.itemList.tileCount);
+    for(int i = 0; i < level.itemList.tileCount; i++){
+        level.itemList.tiles[i] = malloc(sizeof(int) * TILE_SIZE);
     }
 
     cell = 0;
-    for (int i = 0; i < 16; i++) {
-        for (int j = 0; j < 16; j++) {
-            items.itemImg[cell] = itemImg[cell];
+    for(int itm = 0; itm < level.itemList.tileCount; itm++){
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 16; j++) {
+                level.itemList.tiles[itm][cell] = itemImg[cell];
+                cell++;
+            }
+        }
+    }
+
+    //  Count items, set size of item array
+    cell = 0;
+    level.itemList.itemCount = 0;
+    for (int i = 0; i < level.map.size.y; i++) {
+        for (int j = 0; j < level.map.size.x; j++) {
+            if(level.map.items[cell] != 0){
+                level.itemList.itemCount++;
+            }
             cell++;
+        }
+    }
+    
+    if(level.itemList.itemCount == 0){
+        // Allocate memory for at least 1 item
+        level.itemList.items = malloc(sizeof(Item) * 1);
+    }else{
+        // Allocate memory for total of items
+        level.itemList.items = malloc(sizeof(Item) * level.itemList.itemCount);
+
+        cell = 0;
+        int itm = 0;
+        for (int i = 0; i < level.map.size.y; i++) {
+            for (int j = 0; j < level.map.size.x; j++) {
+                if(level.map.items[cell] != 0){
+                    level.itemList.items[itm].type = level.map.items[cell];
+                    level.itemList.items[itm].pos.y = i;
+                    level.itemList.items[itm].pos.x = j;
+                    itm++;
+                }
+                cell++;
+            }
         }
     }
 }
@@ -268,16 +354,16 @@ void events(){
                 not_quit = 0;
                 break;
             case SDL_SCANCODE_W:
-                p.rect.y -= p.stepSize;
+                p.pos.y -= 1;
                 break;
             case SDL_SCANCODE_S:
-                p.rect.y += p.stepSize;
+                p.pos.y += 1;
                 break;
             case SDL_SCANCODE_A:
-                p.rect.x -= p.stepSize;
+                p.pos.x -= 1;
                 break;
             case SDL_SCANCODE_D:
-                p.rect.x += p.stepSize;
+                p.pos.x += 1;
                 break;
             default:
                 break;
@@ -291,28 +377,31 @@ void events(){
 
 void update() {
     // Player
-    if (p.rect.y > HEIGHT - p.size) { p.rect.y = HEIGHT - CELL_SIZE; }
-    if (p.rect.y < 0) { p.rect.y = 0; }
-    if (p.rect.x > WIDTH - p.size) { p.rect.x = WIDTH - CELL_SIZE; }
-    if (p.rect.x < 0) { p.rect.x = 0; }
+    if (p.pos.y > level.map.size.y - 1) { p.pos.y = level.map.size.y - 1; }
+    if (p.rect.y < 0) { p.pos.y = 0; }
+    if (p.pos.x > level.map.size.x - 1) { p.pos.x = level.map.size.x - 1; }
+    if (p.pos.x < 0) { p.pos.x = 0; }
+
+    p.rect.x = p.pos.x * CELL_SIZE;
+    p.rect.y = p.pos.y * CELL_SIZE;
 
     // Pick up Items
-    for (int i = 0; i < items.size; i++) {
-        if (p.rect.x == items.item[i].x && p.rect.y == items.item[i].y) {
-            items.item[i].x = -CELL_SIZE; items.item[i].y = -CELL_SIZE;
+    for (int i = 0; i < level.itemList.itemCount; i++) {
+        if (p.pos.x == level.itemList.items[i].pos.x && p.pos.y == level.itemList.items[i].pos.y) {
+            level.itemList.items[i].pos.x = -1; level.itemList.items[i].pos.y = -1;
         }
     }
 }
 
 void display() {
-    SDL_SetRenderDrawColor(rend, 110, 110, 255, 255);
+    SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
     SDL_RenderClear(rend);
 
     // Map
     int cell = 0;
-    for (int i = 0; i < level.mapSize.y; i++) {
-        for (int j = 0; j < level.mapSize.x; j++) {
-            tileDraw(j * CELL_SIZE, i * CELL_SIZE, level.map[cell]);
+    for (int i = 0; i < level.map.size.y; i++) {
+        for (int j = 0; j < level.map.size.x; j++) {
+            tileDraw(j * CELL_SIZE, i * CELL_SIZE, level.map.layout[cell]);
             cell++;
         }
     }
@@ -320,19 +409,25 @@ void display() {
     // Items
     SDL_Rect rect = { 0, 0, TILE_STEP, TILE_STEP};
     cell = 0;
-    SDL_SetRenderDrawColor(rend, 0, 50, 255, 255);
-    for (int x = 0; x < items.size; x++) {
-        for (int i = 0; i < 16; i++) {
-            for (int j = 0; j < 16; j++) {
-                if (items.itemImg[cell] == 1) {
-                    rect.x = j * TILE_STEP + items.item[x].x; rect.y = i * TILE_STEP + items.item[x].y;
-                    SDL_RenderFillRect(rend, &rect);
+    SDL_SetRenderDrawColor(rend, 0, 0, 255, 255);   // blue
+    for (int itm = 0; itm < level.itemList.itemCount; itm++) {
+        if(level.itemList.items[itm].type == 1){
+            for (int i = 0; i < 16; i++) {
+                for (int j = 0; j < 16; j++) {
+                    if (level.itemList.tiles[0][cell] == 4) {
+                        rect.x = j * TILE_STEP + level.itemList.items[itm].pos.x * CELL_SIZE;
+                        rect.y = i * TILE_STEP + level.itemList.items[itm].pos.y * CELL_SIZE;
+                        SDL_RenderFillRect(rend, &rect);
+                    }
+                    cell++;
                 }
-                cell++;
             }
         }
         cell = 0;
     }
+
+    // Creatures
+        // go here ...
 
     // Player
     SDL_SetRenderDrawColor(rend, 200, 125, 0, 255);
@@ -371,7 +466,7 @@ void tileDraw(int x, int y, int tile) {
                 case 6://   grey
                     SDL_SetRenderDrawColor(rend, 50, 50, 50, 255);
                     break;
-                default://  transparent
+                case 7://  transparent
                     SDL_SetRenderDrawColor(rend, 0, 0, 0, 0);
                     break;
             }
