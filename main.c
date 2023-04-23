@@ -9,17 +9,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//  Settings
 #define CELL_SIZE 64
 #define WIDTH CELL_SIZE * 16
 #define HEIGHT CELL_SIZE * 9
 #define TILE_STEP CELL_SIZE / 16
 #define TILE_SIZE 256
 
+//  Tile ID
 #define GRASS 0
 #define ROAD 1
 #define WATER 2
 
-#define PLAYER 1
+//  Creature ID
+#define CREATURE_PLAYER 1
+
+//  Event ID
+#define PLAYER_SPAWN 1
 
 int not_quit = 1;
 
@@ -254,7 +260,7 @@ void init() {
             level.map.creatures[cell] = creatureMap[cell];
             level.map.events[cell] = eventMap[cell];
 
-            if (level.map.events[cell] == PLAYER) {
+            if (level.map.events[cell] == PLAYER_SPAWN) {
                 level.playerSpawn.x = j;
                 level.playerSpawn.y = i;
             }
@@ -377,11 +383,25 @@ void events(){
 
 void update() {
     // Player
+
+    // Movement
     if (p.pos.y > level.map.size.y - 1) { p.pos.y = level.map.size.y - 1; }
     if (p.rect.y < 0) { p.pos.y = 0; }
     if (p.pos.x > level.map.size.x - 1) { p.pos.x = level.map.size.x - 1; }
     if (p.pos.x < 0) { p.pos.x = 0; }
 
+    // Update creatures map player position
+    int cell = 0;
+    for(int i = 0; i < level.map.size.y; i++){
+        for(int j = 0; j < level.map.size.x; j++){
+            level.map.creatures[cell] = 0;
+            if(p.pos.y == i && p.pos.x == j){
+                level.map.creatures[cell] = CREATURE_PLAYER;
+            }
+        }
+    }
+
+    // Save pixel coordinates
     p.rect.x = p.pos.x * CELL_SIZE;
     p.rect.y = p.pos.y * CELL_SIZE;
 
